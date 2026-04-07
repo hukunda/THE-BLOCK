@@ -1,0 +1,65 @@
+[gd_scene load_steps=2 format=3 uid="uid://theblock_main"]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
+
+[node name="Main" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_main")
+
+[node name="AsciiLabel" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 6.0
+offset_top = 6.0
+offset_right = -6.0
+offset_bottom = -6.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.82, 0.8, 0.72, 1)
+theme_override_font_sizes/font_size = 13
+text = "Loading THE BLOCK..."
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 0
+
+[node name="TouchLayer" type="CanvasLayer" parent="."]
+layer = 128
+
+[node name="TouchBar" type="HBoxContainer" parent="TouchLayer"]
+layout_mode = 0
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -520.0
+offset_top = -96.0
+offset_right = -12.0
+offset_bottom = -12.0
+grow_horizontal = 0
+grow_vertical = 0
+alignment = 2
+theme_override_constants/separation = 10
+
+[node name="TurnL" type="Button" parent="TouchLayer/TouchBar"]
+custom_minimum_size = Vector2(96, 72)
+text = "<<"
+
+[node name="Fire" type="Button" parent="TouchLayer/TouchBar"]
+custom_minimum_size = Vector2(120, 72)
+text = "FIRE"
+
+[node name="Use" type="Button" parent="TouchLayer/TouchBar"]
+custom_minimum_size = Vector2(100, 72)
+text = "USE"
+
+[node name="TurnR" type="Button" parent="TouchLayer/TouchBar"]
+custom_minimum_size = Vector2(96, 72)
+text = ">>"
