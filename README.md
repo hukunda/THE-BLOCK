@@ -2,7 +2,22 @@
 
 Full **10-floor** ASCII first-person game (see `GAME_DESIGN.md`): explore, fight residents, beat each floor’s boss, reach the roof, then pick an **ending**. Same codebase runs on **desktop, mobile exports, and the web** via Godot’s HTML5 export.
 
-## Play in the browser (build once)
+## Play in the browser (no Godot on your PC)
+
+GitHub Actions builds the web version and deploys it to **GitHub Pages** whenever `main` is updated.
+
+1. On GitHub: open your repo → **Settings** → **Pages**.
+2. Under **Build and deployment** → **Source**, choose **GitHub Actions** (not “Deploy from a branch”).
+3. Push this repo to `main` (including `.github/workflows/deploy-web.yml`). The **Actions** tab will run **Deploy Web to GitHub Pages**.
+4. When it goes green, Pages shows your site URL — usually:
+
+   **`https://hukunda.github.io/THE-BLOCK/`**
+
+   (replace `hukunda` / `THE-BLOCK` if your username or repo name differs.)
+
+First run can take a few minutes (download Godot + templates). Use **Actions → Deploy Web to GitHub Pages → Re-run** if something fails.
+
+## Play in the browser (export on your own machine)
 
 1. Install **[Godot 4.2+](https://godotengine.org/download)** (standard build with export templates).
 2. Open this folder in Godot → **Project → Export…** → add **Web** if prompted → select preset **Web**.
