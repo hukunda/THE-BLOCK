@@ -44,7 +44,7 @@ jobs:
           path: |
             ~/.local/share/godot/export_templates
             ./_godot_bin
-          key: godot-4.3-stable-web-${{ runner.os }}-v2
+          key: godot-4.3-stable-web-${{ runner.os }}-v3
 
       - name: Install Godot 4.3 + export templates
         run: |
@@ -57,32 +57,44 @@ jobs:
             chmod +x _godot_bin/Godot_v4.3-stable_linux.x86_64
             mv _godot_bin/Godot_v4.3-stable_linux.x86_64 _godot_bin/godot
           fi
-          if ! find "$HOME/.local/share/godot/export_templates" -maxdepth 1 -type d -name '4.3*' | grep -q .; then
+          TPL="$HOME/.local/share/godot/export_templates"
+          mkdir -p "$TPL"
+          # Download only if we have neither a proper folder nor the flat layout from an old extract/cache.
+          if [ ! -f "$TPL/4.3.stable/web_nothreads_release.zip" ] && [ ! -f "$TPL/web_nothreads_release.zip" ]; then
             curl -sL -o /tmp/templates.tpz \
               "https://github.com/godotengine/godot-builds/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz"
-            mkdir -p "$HOME/.local/share/godot/export_templates"
             unzip -q /tmp/templates.tpz -d /tmp/godot_export_tpl
-            mv /tmp/godot_export_tpl/templates/* "$HOME/.local/share/godot/export_templates/"
+            mv /tmp/godot_export_tpl/templates/* "$TPL/"
             rm -rf /tmp/godot_export_tpl
           fi
-          ls -la "$HOME/.local/share/godot/export_templates/"
+          ls -la "$TPL/"
           _godot_bin/godot --version
 
-      # Editor expects exactly .../export_templates/4.3.stable/; tpz may ship 4.3.0.stable etc.
-      - name: Symlink export templates to 4.3.stable
+      # Godot requires .../export_templates/4.3.stable/web_nothreads_*.zip.
+      # The .tpz often unpacks to a flat `templates/` (no version subdir) — or cache restores that layout.
+      - name: Normalize export_templates → 4.3.stable
         run: |
           set -euxo pipefail
           BASE="$HOME/.local/share/godot/export_templates"
           mkdir -p "$BASE"
           cd "$BASE"
-          if [ ! -d 4.3.stable ]; then
+          if [ -f ./web_nothreads_release.zip ] && [ ! -f ./4.3.stable/web_nothreads_release.zip ]; then
+            mkdir -p __godot_43__
+            for x in *; do
+              [ "$x" = "__godot_43__" ] && continue
+              [ "$x" = "4.3.stable" ] && continue
+              [ -e "$x" ] || continue
+              mv "$x" __godot_43__/
+            done
+            rm -rf 4.3.stable
+            mv __godot_43__ 4.3.stable
+          fi
+          if [ ! -f ./4.3.stable/web_nothreads_release.zip ]; then
             FOUND=$(find . -mindepth 1 -maxdepth 1 -type d -name '4.3*.stable' | head -1 | sed 's|^\./||')
-            if [ -z "$FOUND" ]; then
-              echo "No 4.3*.stable template directory under $BASE"
-              ls -la
-              exit 1
+            if [ -n "$FOUND" ] && [ -f "$FOUND/web_nothreads_release.zip" ]; then
+              rm -rf 4.3.stable
+              ln -sfn "$FOUND" 4.3.stable
             fi
-            ln -sfn "$FOUND" 4.3.stable
           fi
           ls -la
           test -f 4.3.stable/web_nothreads_release.zip
