@@ -49,19 +49,19 @@ static func _wall_glyph(dist: float, side_ns: bool) -> int:
 static func _ceiling_glyph(r: int, half: int) -> int:
 	var k: float = 1.0 - float(r) / float(max(1, half))
 	if k > 0.75:
-		return ord("\"")
+		return "\"".unicode_at(0)
 	if k > 0.45:
-		return ord("'")
-	return ord(":")
+		return "'".unicode_at(0)
+	return ":".unicode_at(0)
 
 
 static func _floor_glyph(r: int, half: int, rows: int) -> int:
 	var k: float = float(r - half) / float(max(1, rows - half))
 	if k < 0.35:
-		return ord(",")
+		return ",".unicode_at(0)
 	if k < 0.7:
-		return ord(".")
-	return ord("-")
+		return ".".unicode_at(0)
+	return "-".unicode_at(0)
 
 
 static func render(
@@ -73,7 +73,7 @@ static func render(
 	sprites: Array = []
 ) -> Dictionary:
 	if cols < 8 or view_rows < 8:
-		return {"text": "", "depth": PackedFloatArray()}
+		return {"text": "", "depth": []}
 	var dir := Vector2(cos(angle), sin(angle))
 	var plane := Vector2(-dir.y, dir.x) * tan(deg_to_rad(70.0) * 0.5)
 	var half: int = view_rows / 2
@@ -87,8 +87,10 @@ static func render(
 		grid[r] = row
 
 	var map_h: int = map.size()
-	var depth_buffer: PackedFloatArray = PackedFloatArray()
+	var depth_buffer: Array = []
 	depth_buffer.resize(cols)
+	for _i in range(cols):
+		depth_buffer[_i] = 0.0
 
 	for x in cols:
 		var camera_x: float = 2.0 * float(x) / float(max(1, cols - 1)) - 1.0
@@ -187,7 +189,7 @@ static func _sprite_transform(pos: Vector2, angle: float, sp: Vector2, dir: Vect
 
 static func _draw_sprites(
 	grid: Array,
-	depth_buffer: PackedFloatArray,
+	depth_buffer: Array,
 	view_rows: int,
 	half: int,
 	cols: int,
@@ -243,11 +245,11 @@ static func _draw_sprites(
 					if mid and (stripe + r) % 2 == 0:
 						ch = "█".unicode_at(0)
 					elif (stripe + r) % 3 == 0:
-						ch = ord("=")
+						ch = "=".unicode_at(0)
 					else:
-						ch = ord("#")
+						ch = "#".unicode_at(0)
 				else:
-					ch = ord("@") if (r + stripe) % 2 == 0 else ord("0")
+					ch = "@".unicode_at(0) if (r + stripe) % 2 == 0 else "0".unicode_at(0)
 				grid[r][stripe] = ch
 			depth_buffer[stripe] = transform_y
 

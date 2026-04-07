@@ -44,7 +44,7 @@ jobs:
           path: |
             ~/.local/share/godot/export_templates
             ./_godot_bin
-          key: godot-4.3-stable-web-${{ runner.os }}-v1
+          key: godot-4.3-stable-web-${{ runner.os }}-v2
 
       - name: Install Godot 4.3 + export templates
         run: |
@@ -67,6 +67,25 @@ jobs:
           fi
           ls -la "$HOME/.local/share/godot/export_templates/"
           _godot_bin/godot --version
+
+      # Editor expects exactly .../export_templates/4.3.stable/; tpz may ship 4.3.0.stable etc.
+      - name: Symlink export templates to 4.3.stable
+        run: |
+          set -euxo pipefail
+          BASE="$HOME/.local/share/godot/export_templates"
+          mkdir -p "$BASE"
+          cd "$BASE"
+          if [ ! -d 4.3.stable ]; then
+            FOUND=$(find . -mindepth 1 -maxdepth 1 -type d -name '4.3*.stable' | head -1 | sed 's|^\./||')
+            if [ -z "$FOUND" ]; then
+              echo "No 4.3*.stable template directory under $BASE"
+              ls -la
+              exit 1
+            fi
+            ln -sfn "$FOUND" 4.3.stable
+          fi
+          ls -la
+          test -f 4.3.stable/web_nothreads_release.zip
 
       # --export-release implies --import on 4.3+ (imports fonts, etc. before packing).
       - name: Export Web
