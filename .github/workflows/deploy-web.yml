@@ -15,15 +15,19 @@ concurrency:
   group: pages
   cancel-in-progress: true
 
+# Use Node 24 for JS actions (avoids Node 20 deprecation warnings on checkout/cache).
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Cache Godot + templates
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.local/share/godot/export_templates
@@ -58,7 +62,7 @@ jobs:
           _godot_bin/godot --headless --verbose --export-release "Web" "$(pwd)/export/web/index.html"
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: export/web
 
@@ -71,4 +75,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
