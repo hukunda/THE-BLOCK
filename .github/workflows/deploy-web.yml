@@ -15,7 +15,6 @@ concurrency:
   group: pages
   cancel-in-progress: true
 
-# Use Node 24 for JS actions (avoids Node 20 deprecation warnings on checkout/cache).
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -26,40 +25,58 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            libfontconfig1 \
+            libgl1 \
+            libx11-6 \
+            libxcursor1 \
+            libxinerama1 \
+            libxi6 \
+            libxrandr2
+
+      # Godot 4.3+ adds --import (reliable headless reimport). Still opens 4.2 projects.
       - name: Cache Godot + templates
         uses: actions/cache@v5
         with:
           path: |
             ~/.local/share/godot/export_templates
-            ./_godot_bin/godot
-          key: godot-4.2.2-web-${{ runner.os }}
+            ./_godot_bin
+          key: godot-4.3-stable-web-${{ runner.os }}-v1
 
-      - name: Install Godot 4.2.2 + export templates
+      - name: Install Godot 4.3 + export templates
         run: |
-          set -e
+          set -euxo pipefail
           mkdir -p _godot_bin
           if [ ! -x _godot_bin/godot ]; then
             curl -sL -o /tmp/godot.zip \
-              "https://github.com/godotengine/godot-builds/releases/download/4.2.2-stable/Godot_v4.2.2-stable_linux.x86_64.zip"
+              "https://github.com/godotengine/godot-builds/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip"
             unzip -q /tmp/godot.zip -d _godot_bin
-            chmod +x _godot_bin/Godot_v4.2.2-stable_linux.x86_64
-            mv _godot_bin/Godot_v4.2.2-stable_linux.x86_64 _godot_bin/godot
+            chmod +x _godot_bin/Godot_v4.3-stable_linux.x86_64
+            mv _godot_bin/Godot_v4.3-stable_linux.x86_64 _godot_bin/godot
           fi
-          TPL="$HOME/.local/share/godot/export_templates/4.2.2.stable"
-          if [ ! -d "$TPL" ]; then
+          if ! find "$HOME/.local/share/godot/export_templates" -maxdepth 1 -type d -name '4.3*' | grep -q .; then
             curl -sL -o /tmp/templates.tpz \
-              "https://github.com/godotengine/godot-builds/releases/download/4.2.2-stable/Godot_v4.2.2-stable_export_templates.tpz"
+              "https://github.com/godotengine/godot-builds/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz"
             mkdir -p "$HOME/.local/share/godot/export_templates"
             unzip -q /tmp/templates.tpz -d /tmp/godot_export_tpl
             mv /tmp/godot_export_tpl/templates/* "$HOME/.local/share/godot/export_templates/"
             rm -rf /tmp/godot_export_tpl
           fi
+          ls -la "$HOME/.local/share/godot/export_templates/"
           _godot_bin/godot --version
 
+      # --export-release implies --import on 4.3+ (imports fonts, etc. before packing).
       - name: Export Web
         run: |
+          set -euxo pipefail
           mkdir -p export/web
-          _godot_bin/godot --headless --verbose --export-release "Web" "$(pwd)/export/web/index.html"
+          OUT="$GITHUB_WORKSPACE/export/web/index.html"
+          _godot_bin/godot --headless --verbose --path "$GITHUB_WORKSPACE" --export-release "Web" "$OUT"
+          test -f "$OUT"
+          ls -la export/web
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
