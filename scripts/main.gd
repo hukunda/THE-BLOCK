@@ -137,17 +137,15 @@ func _redraw_ascii() -> void:
 		world.player_angle,
 		cols,
 		view_rows,
-		world.collect_sprites()
+		world.collect_sprites(),
+		fire_flash * 2.25,
+		world.floor_glitch,
+		float(Time.get_ticks_msec()) * 0.002
 	)
 	var world_str: String = res["text"]
-	var tag_grid: Variant = res.get("tag_grid", [])
-	world_str = world.apply_glitch_visual(world_str)
-	if fire_flash > 0.0:
-		world_str = _tint_flash(world_str)
-	var world_bb: String = AsciiRaycast.build_colored_bbcode(world_str, tag_grid, view_rows, cols)
-	var hud_bb: String = "[color=#e4e0d4]" + _escape_bbcode(_build_hud(cols)) + "[/color]"
+	var hud_bb: String = "[color=#b8b8b8]" + _escape_bbcode(_build_hud(cols)) + "[/color]"
 	ascii_view.bbcode_enabled = true
-	ascii_view.text = "[center]" + world_bb + "\n" + hud_bb + "[/center]"
+	ascii_view.text = "[center][color=#ffffff]" + world_str + "[/color]\n" + hud_bb + "[/center]"
 
 
 func _escape_bbcode(s: String) -> String:
@@ -199,10 +197,6 @@ func _pad_line(s: String, cols: int) -> String:
 	if s.length() >= cols:
 		return s.substr(0, cols)
 	return s + _repeat(" ", cols - s.length())
-
-
-func _tint_flash(s: String) -> String:
-	return s.replace("█", "▓").replace("#", "=")
 
 
 func _title_text() -> String:
