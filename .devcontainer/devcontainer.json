@@ -1,0 +1,16 @@
+{
+  "name": "THE BLOCK (Godot 4.3, no local install)",
+  "image": "mcr.microsoft.com/devcontainers/base:jammy",
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": ["geequlim.godot-tools"]
+    }
+  },
+  "portsAttributes": {
+    "8765": {
+      "label": "Web build preview",
+      "onAutoForward": "notify"
+    }
+  }
+}
