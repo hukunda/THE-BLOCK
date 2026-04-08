@@ -1,8 +1,9 @@
 class_name AsciiRaycast
 ## Wolfenstein-style DDA + optional sprite strips (GAME_DESIGN.md §6).
 
-const WALL_EW: String = ".:-=+#█"
-const WALL_NS: String = ".::||##█"
+## Distance → brightness steps (far = light/dither, near = heavy blocks).
+const WALL_EW: String = "·:--==+##█"
+const WALL_NS: String = "·:::||+##█"
 
 
 static func is_solid(ch: String) -> bool:
@@ -39,29 +40,67 @@ static func move_slide(map: PackedStringArray, pos: Vector2, delta: Vector2) -> 
 	return p
 
 
-static func _wall_glyph(dist: float, side_ns: bool) -> int:
+static func _shade_index(dist: float) -> float:
+	return 1.0 - clampf(dist / 20.0, 0.0, 1.0)
+
+
+static func _wall_glyph_at(
+	dist: float,
+	side_ns: bool,
+	tex_u: float,
+	row_in_strip: int,
+	screen_x: int,
+	wall_cell: String
+) -> int:
 	var pal: String = WALL_NS if side_ns else WALL_EW
-	var t: float = 1.0 - clampf(dist / 18.0, 0.0, 1.0)
-	var idx: int = int(t * float(pal.length() - 1))
-	return pal.unicode_at(idx)
+	var shade: float = _shade_index(dist)
+	var base_idx: int = int(shade * float(pal.length() - 1))
+	var u: int = int(tex_u * 24.0) % 6
+	var v: int = row_in_strip % 4
+	var xor_uv: int = (u + v + screen_x) % 2
+
+	match wall_cell:
+		"d":
+			var frame: String = "|" if xor_uv == 0 else ":"
+			return frame.unicode_at(0)
+		"1":
+			var bar: String = "+" if (int(tex_u * 8.0) % 2) == 0 else "|"
+			return bar.unicode_at(0)
+		"=":
+			var fence: String = "-" if (row_in_strip % 2) == 0 else "+"
+			return fence.unicode_at(0)
+		_:
+			var pick: int = base_idx
+			if side_ns:
+				pick = clampi(base_idx + (1 if xor_uv == 0 else 0), 0, pal.length() - 1)
+			else:
+				var band: int = (int(tex_u * 5.0) + row_in_strip / 2) % 3
+				pick = clampi(base_idx + band - 1, 0, pal.length() - 1)
+			return pal.unicode_at(pick)
 
 
-static func _ceiling_glyph(r: int, half: int) -> int:
+static func _ceiling_glyph(r: int, half: int, screen_x: int) -> int:
 	var k: float = 1.0 - float(r) / float(max(1, half))
-	if k > 0.75:
-		return "\"".unicode_at(0)
-	if k > 0.45:
-		return "'".unicode_at(0)
-	return ":".unicode_at(0)
+	var stripe: int = (screen_x + r) % 5
+	if k > 0.82:
+		return ("`" if stripe != 0 else ".").unicode_at(0)
+	if k > 0.55:
+		return ("'" if stripe % 2 == 0 else "`").unicode_at(0)
+	if k > 0.28:
+		return ("." if stripe % 2 == 0 else ":").unicode_at(0)
+	return (":" if stripe % 2 == 0 else ".").unicode_at(0)
 
 
-static func _floor_glyph(r: int, half: int, rows: int) -> int:
+static func _floor_glyph(r: int, half: int, rows: int, screen_x: int) -> int:
 	var k: float = float(r - half) / float(max(1, rows - half))
-	if k < 0.35:
-		return ",".unicode_at(0)
-	if k < 0.7:
-		return ".".unicode_at(0)
-	return "-".unicode_at(0)
+	var stripe: int = (screen_x + r * 2) % 7
+	if k < 0.22:
+		return ("_" if stripe % 3 != 0 else ",").unicode_at(0)
+	if k < 0.55:
+		return ("," if stripe % 2 == 0 else ".").unicode_at(0)
+	if k < 0.82:
+		return ("." if stripe % 2 == 0 else "-").unicode_at(0)
+	return ("-" if stripe % 2 == 0 else "=").unicode_at(0)
 
 
 static func render(
@@ -154,16 +193,24 @@ static func render(
 		draw_end = clampi(draw_end, 0, view_rows - 1)
 
 		var side_ns: bool = side == 1
-		var wg: int = _wall_glyph(perp, side_ns)
+		var wall_cell: String = cell_at(map, map_x, map_y)
+		var tex_u: float = 0.5
+		if side == 0:
+			var wy: float = pos.y + perp * ray_y
+			tex_u = wy - floor(wy)
+		else:
+			var wx: float = pos.x + perp * ray_x
+			tex_u = wx - floor(wx)
 
 		for r in view_rows:
 			var ch: int
 			if r < draw_start:
-				ch = _ceiling_glyph(r, half)
+				ch = _ceiling_glyph(r, half, x)
 			elif r > draw_end:
-				ch = _floor_glyph(r, half, view_rows)
+				ch = _floor_glyph(r, half, view_rows, x)
 			else:
-				ch = wg
+				var row_in_strip: int = r - draw_start
+				ch = _wall_glyph_at(perp, side_ns, tex_u, row_in_strip, x, wall_cell)
 			grid[r][x] = ch
 
 	if sprites.size() > 0:

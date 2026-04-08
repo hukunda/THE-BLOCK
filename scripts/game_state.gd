@@ -18,7 +18,7 @@ func _setup_input_actions() -> void:
 		"strafe_right": [KEY_D],
 		"turn_left": [KEY_Q, KEY_LEFT],
 		"turn_right": [KEY_E, KEY_RIGHT],
-		"fire": [KEY_SPACE],
+		"fire": [KEY_CTRL],
 		"interact": [KEY_F],
 		"use_item": [KEY_R],
 		"pause": [KEY_ESCAPE],
