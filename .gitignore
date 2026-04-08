@@ -1,3 +1,6 @@
+# Local Godot editor binary (download from godotengine.org / godot-builds)
+_godot_bin/
+
 # Godot 4
 .godot/
 *.translation
