@@ -1,9 +1,21 @@
 class_name AsciiRaycast
 ## Wolfenstein-style DDA + optional sprite strips (GAME_DESIGN.md §6).
 
-## Distance → brightness steps (far = light/dither, near = heavy blocks).
-const WALL_EW: String = "·:--==+##█"
-const WALL_NS: String = "·:::||+##█"
+## Distance → brightness steps (far = lighter glyphs, near = heavy blocks).
+const WALL_EW: String = "·-==++##█"
+const WALL_NS: String = "·::||++##█"
+
+## Per-cell tags for BBCode coloring in the UI (see build_colored_bbcode).
+const TAG_SKY_MIN := 1
+const TAG_SKY_MAX := 3
+const TAG_FLOOR_MIN := 10
+const TAG_FLOOR_MAX := 12
+const TAG_WALL_EW_BASE := 20
+const TAG_WALL_NS_BASE := 24
+const TAG_DOOR_BASE := 32
+const TAG_FENCE_BASE := 36
+const TAG_SPRITE := 40
+const TAG_BOSS := 41
 
 
 static func is_solid(ch: String) -> bool:
@@ -44,6 +56,107 @@ static func _shade_index(dist: float) -> float:
 	return 1.0 - clampf(dist / 20.0, 0.0, 1.0)
 
 
+static func _wall_tag(perp: float, side_ns: bool, wall_cell: String) -> int:
+	var d: int = clampi(int(_shade_index(perp) * 3.99), 0, 3)
+	match wall_cell:
+		"d":
+			return TAG_DOOR_BASE + d
+		"=":
+			return TAG_FENCE_BASE + d
+		_:
+			return (TAG_WALL_NS_BASE if side_ns else TAG_WALL_EW_BASE) + d
+
+
+static func bb_hex_for_tag(tag: int) -> String:
+	match tag:
+		1:
+			return "#5eb8f0"
+		2:
+			return "#72c8f8"
+		3:
+			return "#86d8ff"
+		10:
+			return "#9a6848"
+		11:
+			return "#ae7858"
+		12:
+			return "#c28868"
+		20:
+			return "#3a8078"
+		21:
+			return "#4aa898"
+		22:
+			return "#5ec8b0"
+		23:
+			return "#7ee8d0"
+		24:
+			return "#6848a0"
+		25:
+			return "#8060b8"
+		26:
+			return "#9878d0"
+		27:
+			return "#b898e8"
+		32:
+			return "#c89038"
+		33:
+			return "#dca048"
+		34:
+			return "#f0b058"
+		35:
+			return "#ffc868"
+		36:
+			return "#a86828"
+		37:
+			return "#c07838"
+		38:
+			return "#d88848"
+		39:
+			return "#ec9858"
+		40:
+			return "#ffe8d0"
+		41:
+			return "#ff6030"
+		_:
+			return "#c8c2b0"
+
+
+static func _escape_bbcode_char(ch: String) -> String:
+	if ch == "[":
+		return "[lb]"
+	if ch == "]":
+		return "[rb]"
+	return ch
+
+
+static func build_colored_bbcode(plain: String, tag_grid: Array, view_rows: int, cols: int) -> String:
+	var cur_col: String = ""
+	var out: String = ""
+	for r in view_rows:
+		for c in cols:
+			var idx: int = r * (cols + 1) + c
+			if idx >= plain.length():
+				break
+			var ch: String = plain.substr(idx, 1)
+			var row_tags: Variant = tag_grid[r]
+			var t: int = int(row_tags[c])
+			var col: String = bb_hex_for_tag(t)
+			if col != cur_col:
+				if cur_col != "":
+					out += "[/color]"
+				out += "[color=" + col + "]"
+				cur_col = col
+			out += _escape_bbcode_char(ch)
+		if r + 1 < view_rows:
+			if cur_col != "":
+				out += "[/color]"
+				cur_col = ""
+			out += "\n"
+	if cur_col != "":
+		out += "[/color]"
+	return out
+
+
 static func _wall_glyph_at(
 	dist: float,
 	side_ns: bool,
@@ -61,13 +174,13 @@ static func _wall_glyph_at(
 
 	match wall_cell:
 		"d":
-			var frame: String = "|" if xor_uv == 0 else ":"
+			var frame: String = "█" if xor_uv == 0 else "▒"
 			return frame.unicode_at(0)
 		"1":
-			var bar: String = "+" if (int(tex_u * 8.0) % 2) == 0 else "|"
+			var bar: String = "█" if (int(tex_u * 8.0) % 2) == 0 else "│"
 			return bar.unicode_at(0)
 		"=":
-			var fence: String = "-" if (row_in_strip % 2) == 0 else "+"
+			var fence: String = "═" if (row_in_strip % 2) == 0 else "╬"
 			return fence.unicode_at(0)
 		_:
 			var pick: int = base_idx
@@ -112,18 +225,24 @@ static func render(
 	sprites: Array = []
 ) -> Dictionary:
 	if cols < 8 or view_rows < 8:
-		return {"text": "", "depth": []}
+		return {"text": "", "depth": [], "tag_grid": []}
 	var dir := Vector2(cos(angle), sin(angle))
 	var plane := Vector2(-dir.y, dir.x) * tan(deg_to_rad(70.0) * 0.5)
 	var half: int = view_rows / 2
 	var grid: Array[Array] = []
+	var tag_grid: Array = []
 	grid.resize(view_rows)
+	tag_grid.resize(view_rows)
 	for r in view_rows:
 		var row: Array[int] = []
 		row.resize(cols)
+		var trow: Array[int] = []
+		trow.resize(cols)
 		for c in cols:
 			row[c] = 32
+			trow[c] = 0
 		grid[r] = row
+		tag_grid[r] = trow
 
 	var map_h: int = map.size()
 	var depth_buffer: Array = []
@@ -194,6 +313,7 @@ static func render(
 
 		var side_ns: bool = side == 1
 		var wall_cell: String = cell_at(map, map_x, map_y)
+		var wall_tag: int = _wall_tag(perp, side_ns, wall_cell)
 		var tex_u: float = 0.5
 		if side == 0:
 			var wy: float = pos.y + perp * ray_y
@@ -204,17 +324,23 @@ static func render(
 
 		for r in view_rows:
 			var ch: int
+			var cell_tag: int = 0
 			if r < draw_start:
 				ch = _ceiling_glyph(r, half, x)
+				cell_tag = TAG_SKY_MIN + ((r + x) % 3)
 			elif r > draw_end:
+				var stripe_f: int = (x + r * 2) % 7
 				ch = _floor_glyph(r, half, view_rows, x)
+				cell_tag = TAG_FLOOR_MIN + (stripe_f % 3)
 			else:
 				var row_in_strip: int = r - draw_start
 				ch = _wall_glyph_at(perp, side_ns, tex_u, row_in_strip, x, wall_cell)
+				cell_tag = wall_tag
 			grid[r][x] = ch
+			tag_grid[r][x] = cell_tag
 
 	if sprites.size() > 0:
-		_draw_sprites(grid, depth_buffer, view_rows, half, cols, pos, dir, plane, sprites)
+		_draw_sprites(grid, tag_grid, depth_buffer, view_rows, half, cols, pos, dir, plane, sprites)
 
 	var out := ""
 	for r in view_rows:
@@ -222,7 +348,7 @@ static func render(
 			out += String.chr(grid[r][c])
 		if r + 1 < view_rows:
 			out += "\n"
-	return {"text": out, "depth": depth_buffer}
+	return {"text": out, "depth": depth_buffer, "tag_grid": tag_grid}
 
 
 static func _sprite_transform(pos: Vector2, angle: float, sp: Vector2, dir: Vector2, plane: Vector2) -> Vector2:
@@ -236,6 +362,7 @@ static func _sprite_transform(pos: Vector2, angle: float, sp: Vector2, dir: Vect
 
 static func _draw_sprites(
 	grid: Array,
+	tag_grid: Array,
 	depth_buffer: Array,
 	view_rows: int,
 	half: int,
@@ -296,8 +423,9 @@ static func _draw_sprites(
 					else:
 						ch = "#".unicode_at(0)
 				else:
-					ch = "@".unicode_at(0) if (r + stripe) % 2 == 0 else "0".unicode_at(0)
+					ch = "◆".unicode_at(0) if (r + stripe) % 2 == 0 else "●".unicode_at(0)
 				grid[r][stripe] = ch
+				tag_grid[r][stripe] = TAG_BOSS if boss else TAG_SPRITE
 			depth_buffer[stripe] = transform_y
 
 

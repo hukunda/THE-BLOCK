@@ -1,7 +1,7 @@
 extends Control
 ## Full game shell: title, 10 floors, victory endings, web-friendly.
 
-@onready var ascii_label: Label = $AsciiLabel
+@onready var ascii_view: RichTextLabel = $AsciiView
 @onready var touch_layer: CanvasLayer = $TouchLayer
 
 var world: BlockWorld = BlockWorld.new()
@@ -29,7 +29,7 @@ func _ready() -> void:
 	world.message.connect(_on_world_message)
 	var f: Resource = load("res://fonts/NotoSansMono-Regular.ttf")
 	if f is Font:
-		ascii_label.add_theme_font_override("font", f as Font)
+		ascii_view.add_theme_font_override("normal_font", f as Font)
 	_connect_touch_buttons()
 	_touch_setup()
 
@@ -116,10 +116,12 @@ func _process(_delta: float) -> void:
 
 func _redraw_ascii() -> void:
 	if GameState.show_title:
-		ascii_label.text = _title_text()
+		ascii_view.bbcode_enabled = false
+		ascii_view.text = _title_text()
 		return
 	if GameState.victory_screen:
-		ascii_label.text = _victory_text()
+		ascii_view.bbcode_enabled = false
+		ascii_view.text = _victory_text()
 		return
 
 	var cell: Vector2 = _cell_size()
@@ -138,16 +140,23 @@ func _redraw_ascii() -> void:
 		world.collect_sprites()
 	)
 	var world_str: String = res["text"]
+	var tag_grid: Variant = res.get("tag_grid", [])
 	world_str = world.apply_glitch_visual(world_str)
 	if fire_flash > 0.0:
 		world_str = _tint_flash(world_str)
-	var hud: String = _build_hud(cols)
-	ascii_label.text = world_str + "\n" + hud
+	var world_bb: String = AsciiRaycast.build_colored_bbcode(world_str, tag_grid, view_rows, cols)
+	var hud_bb: String = "[color=#e4e0d4]" + _escape_bbcode(_build_hud(cols)) + "[/color]"
+	ascii_view.bbcode_enabled = true
+	ascii_view.text = "[center]" + world_bb + "\n" + hud_bb + "[/center]"
+
+
+func _escape_bbcode(s: String) -> String:
+	return s.replace("[", "[lb]").replace("]", "[rb]")
 
 
 func _cell_size() -> Vector2:
-	var f: Font = ascii_label.get_theme_font("font")
-	var fs: int = ascii_label.get_theme_font_size("font")
+	var f: Font = ascii_view.get_theme_font("normal_font")
+	var fs: int = ascii_view.get_theme_font_size("normal_font_size")
 	if f:
 		var sz: Vector2 = f.get_string_size("M", HORIZONTAL_ALIGNMENT_LEFT, -1, fs)
 		return Vector2(maxf(sz.x, 1.0), maxf(sz.y, 1.0))
