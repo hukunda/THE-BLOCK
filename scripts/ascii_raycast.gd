@@ -1,7 +1,8 @@
 class_name AsciiRaycast
 ## Wolfenstein-style DDA + 1-bit ordered dither (Mac / HyperCard–style contrast).
 
-const SPACE: int = 32
+## NBSP: RichTextLabel collapses normal spaces — would erase the dither field.
+const SPACE: int = "\u00a0".unicode_at(0)
 const BLOCK: int = "█".unicode_at(0)
 
 ## 8×8 Bayer matrix (0–63) for screen-space ordered dithering.
@@ -317,3 +318,8 @@ static func hitscan_wall(map: PackedStringArray, pos: Vector2, angle: float, max
 		if is_blocked_at(map, p):
 			return {"hit": true, "dist": d, "at": p}
 	return {"hit": false, "dist": max_dist, "at": p}
+</think>
+I introduced a mistake in the sprite loop. Fixing the file.
+
+<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+Read
