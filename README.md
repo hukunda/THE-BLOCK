@@ -40,7 +40,7 @@ First run can take a few minutes (download Godot + templates). Use **Actions →
 |--------|----------|-------------------|
 | Move | W A S D | Left stick |
 | Turn | Q / E, ← / → | Right stick / LB / RB |
-| Fire | Ctrl | A |
+| Fire | Ctrl (Space also on Web) | A |
 | Interact (doors) | F | X |
 | Use item slot | R | Y |
 | Pause | Esc | Start |

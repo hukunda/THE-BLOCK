@@ -11,6 +11,9 @@ func _ready() -> void:
 
 
 func _setup_input_actions() -> void:
+	var fire_keys: Array = [KEY_CTRL]
+	if OS.has_feature("web"):
+		fire_keys.append(KEY_SPACE)
 	var specs: Dictionary = {
 		"move_forward": [KEY_W, KEY_UP],
 		"move_backward": [KEY_S, KEY_DOWN],
@@ -18,7 +21,7 @@ func _setup_input_actions() -> void:
 		"strafe_right": [KEY_D],
 		"turn_left": [KEY_Q, KEY_LEFT],
 		"turn_right": [KEY_E, KEY_RIGHT],
-		"fire": [KEY_CTRL],
+		"fire": fire_keys,
 		"interact": [KEY_F],
 		"use_item": [KEY_R],
 		"pause": [KEY_ESCAPE],
