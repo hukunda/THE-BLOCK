@@ -25,7 +25,7 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(0, 0, 0, 1)
 
-[node name="AsciiView" type="RichTextLabel" parent="."]
+[node name="AsciiView" type="Label" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -37,14 +37,12 @@ offset_bottom = -6.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-theme_override_colors/default_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/normal_font_size = 14
-bbcode_enabled = true
-scroll_active = false
-autowrap_mode = 0
+theme_override_colors/font_color = Color(0.92, 0.92, 0.9, 1)
+theme_override_font_sizes/font_size = 14
+text = ""
 horizontal_alignment = 1
 vertical_alignment = 1
-text = "Loading THE BLOCK..."
+autowrap_mode = 0
 
 [node name="TouchLayer" type="CanvasLayer" parent="."]
 layer = 128

@@ -1,7 +1,7 @@
 extends Control
 ## Full game shell: title, 10 floors, victory endings, web-friendly.
 
-@onready var ascii_view: RichTextLabel = $AsciiView
+@onready var ascii_view: Label = $AsciiView
 @onready var touch_layer: CanvasLayer = $TouchLayer
 
 var world: BlockWorld = BlockWorld.new()
@@ -29,9 +29,10 @@ func _ready() -> void:
 	world.message.connect(_on_world_message)
 	var f: Resource = load("res://fonts/NotoSansMono-Regular.ttf")
 	if f is Font:
-		ascii_view.add_theme_font_override("normal_font", f as Font)
+		ascii_view.add_theme_font_override("font", f as Font)
 	_connect_touch_buttons()
 	_touch_setup()
+	ascii_view.text = _title_text()
 
 
 func _on_floor_changed(_i: int, _t: String) -> void:
@@ -116,11 +117,9 @@ func _process(_delta: float) -> void:
 
 func _redraw_ascii() -> void:
 	if GameState.show_title:
-		ascii_view.bbcode_enabled = false
 		ascii_view.text = _title_text()
 		return
 	if GameState.victory_screen:
-		ascii_view.bbcode_enabled = false
 		ascii_view.text = _victory_text()
 		return
 
@@ -140,21 +139,15 @@ func _redraw_ascii() -> void:
 		world.collect_sprites(),
 		fire_flash * 2.25,
 		world.floor_glitch,
-		float(Time.get_ticks_msec()) * 0.002
+		float(Engine.get_process_frames() % 100000) * 0.002
 	)
 	var world_str: String = res["text"]
-	var hud_bb: String = "[color=#b8b8b8]" + _escape_bbcode(_build_hud(cols)) + "[/color]"
-	ascii_view.bbcode_enabled = true
-	ascii_view.text = "[center][color=#ffffff]" + world_str + "[/color]\n" + hud_bb + "[/center]"
-
-
-func _escape_bbcode(s: String) -> String:
-	return s.replace("[", "[lb]").replace("]", "[rb]")
+	ascii_view.text = world_str + "\n" + _build_hud(cols)
 
 
 func _cell_size() -> Vector2:
-	var f: Font = ascii_view.get_theme_font("normal_font")
-	var fs: int = ascii_view.get_theme_font_size("normal_font_size")
+	var f: Font = ascii_view.get_theme_font("font")
+	var fs: int = ascii_view.get_theme_font_size("font_size")
 	if f:
 		var sz: Vector2 = f.get_string_size("M", HORIZONTAL_ALIGNMENT_LEFT, -1, fs)
 		return Vector2(maxf(sz.x, 1.0), maxf(sz.y, 1.0))
