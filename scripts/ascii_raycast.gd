@@ -1,9 +1,9 @@
 class_name AsciiRaycast
 ## Wolfenstein-style DDA + 1-bit ordered dither (Mac / HyperCard–style contrast).
 
-## Regular space: Label preserves it; NBSP can measure as zero width on some web fonts.
-const SPACE: int = 32
-const BLOCK: int = "█".unicode_at(0)
+## ASCII glyphs: embedded/web fonts often omit U+2588 (█) or give it zero advance.
+const DIM: int = ".".unicode_at(0)
+const LIT: int = "#".unicode_at(0)
 
 ## 8×8 Bayer matrix (0–63) for screen-space ordered dithering.
 const _BAYER8: Array = [
@@ -61,7 +61,8 @@ static func _bayer8(r: int, c: int) -> int:
 
 static func _dither_char(lum: float, r: int, c: int) -> int:
 	var t: float = (float(_bayer8(r, c)) + 0.5) / 64.0
-	return BLOCK if lum >= t else SPACE
+	var adj: float = clampf(lum * 1.14 + 0.08, 0.0, 1.0)
+	return LIT if adj >= t else DIM
 
 
 static func _glitch_wobble(lum: float, r: int, c: int, strength: float, phase: float) -> float:
@@ -140,7 +141,7 @@ static func render(
 		var row: Array[int] = []
 		row.resize(cols)
 		for c in cols:
-			row[c] = SPACE
+			row[c] = DIM
 		grid[r] = row
 
 	var map_h: int = map.size()
@@ -318,3 +319,8 @@ static func hitscan_wall(map: PackedStringArray, pos: Vector2, angle: float, max
 		if is_blocked_at(map, p):
 			return {"hit": true, "dist": d, "at": p}
 	return {"hit": false, "dist": max_dist, "at": p}
+</think>
+I introduced a mistake in the sprite loop. Fixing the file.
+
+<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+Read

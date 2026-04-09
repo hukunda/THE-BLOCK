@@ -441,7 +441,7 @@ func apply_glitch_visual(s: String) -> String:
 			out += ch
 			continue
 		# Keep walls / solids readable — glitch mostly hits open sky & floor noise.
-		if "#|█▓═│░+=1d▒╬◆●".contains(ch):
+		if "#.|█▓═│░+=1d▒╬◆●".contains(ch):
 			out += ch
 			continue
 		var h: int = int(abs(sin(float(_glitch_tick + i) * 0.17 + float(floor_index))) * 1000.0) % 97

@@ -30,9 +30,13 @@ func _ready() -> void:
 	var f: Resource = load("res://fonts/NotoSansMono-Regular.ttf")
 	if f is Font:
 		ascii_view.add_theme_font_override("font", f as Font)
-	ascii_view.add_theme_color_override("font_color", Color(0.95, 0.94, 0.92, 1))
-	ascii_view.add_theme_constant_override("outline_size", 1)
-	ascii_view.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	ascii_view.add_theme_color_override("font_color", Color(0.98, 0.98, 0.96, 1))
+	if OS.has_feature("web"):
+		ascii_view.add_theme_constant_override("outline_size", 0)
+	else:
+		ascii_view.add_theme_constant_override("outline_size", 1)
+		ascii_view.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	ascii_view.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 	ascii_view.z_index = 1
 	var bg: CanvasItem = $Backdrop
 	if bg:
@@ -201,7 +205,7 @@ func _pad_line(s: String, cols: int) -> String:
 
 
 func _title_text() -> String:
-	return """████████████████████████████████████████
+	return """########################################
               THE BLOCK
 
         An ASCII urban nightmare
@@ -209,7 +213,7 @@ func _title_text() -> String:
 
         > TAP / KEY / GAMEPAD TO START <
 
-████████████████████████████████████████"""
+########################################"""
 
 
 func _victory_text() -> String:
@@ -222,12 +226,16 @@ No perfect outcome. Pick one:
   [3] STAY — NG+ (the building keeps receipts.)
 
   Touch: << = LEAVE   FIRE = SHUT DOWN   USE = STAY (NG+)
-████████████████████████████████████████"""
+########################################"""
 
 
 func _input(event: InputEvent) -> void:
 	if GameState.show_title:
 		if event is InputEventKey and event.pressed and not event.echo:
+			GameState.show_title = false
+			world.reset_run()
+			get_viewport().set_input_as_handled()
+		elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 			GameState.show_title = false
 			world.reset_run()
 			get_viewport().set_input_as_handled()
