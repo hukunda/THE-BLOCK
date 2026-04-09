@@ -30,6 +30,10 @@ First run can take a few minutes (download Godot + templates). Use **Actions →
 
 **F5** in the Godot editor, or export to **Windows / macOS / Linux / Android / iOS** from the same project.
 
+### Prototype: 3D scene → on-screen ASCII
+
+`scenes/proto_3d_ascii.tscn` renders a tiny **SubViewport** (spinning cube + floor), reads `ViewportTexture.get_image()`, and draws **1-bit dithered** text using the same Bayer helper as the main game. In Godot: open that scene → **Project → Run Current Scene** (or set it temporarily as the main scene). Swap `MeshInstance3D` meshes for an imported **GLB** when you are ready.
+
 ## Controls
 
 | Action | Keyboard | Gamepad (typical) |
