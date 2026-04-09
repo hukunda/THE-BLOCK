@@ -30,9 +30,17 @@ func _ready() -> void:
 	var f: Resource = load("res://fonts/NotoSansMono-Regular.ttf")
 	if f is Font:
 		ascii_view.add_theme_font_override("font", f as Font)
+	ascii_view.add_theme_color_override("font_color", Color(0.95, 0.94, 0.92, 1))
+	ascii_view.add_theme_constant_override("outline_size", 1)
+	ascii_view.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	ascii_view.z_index = 1
+	var bg: CanvasItem = $Backdrop
+	if bg:
+		bg.z_index = 0
 	_connect_touch_buttons()
 	_touch_setup()
 	ascii_view.text = _title_text()
+	call_deferred("_redraw_ascii")
 
 
 func _on_floor_changed(_i: int, _t: String) -> void:

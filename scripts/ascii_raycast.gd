@@ -1,8 +1,8 @@
 class_name AsciiRaycast
 ## Wolfenstein-style DDA + 1-bit ordered dither (Mac / HyperCard–style contrast).
 
-## NBSP: RichTextLabel collapses normal spaces — would erase the dither field.
-const SPACE: int = "\u00a0".unicode_at(0)
+## Regular space: Label preserves it; NBSP can measure as zero width on some web fonts.
+const SPACE: int = 32
 const BLOCK: int = "█".unicode_at(0)
 
 ## 8×8 Bayer matrix (0–63) for screen-space ordered dithering.
