@@ -130,8 +130,9 @@ static func render(
 	glitch_strength: float = 0.0,
 	style_phase: float = 0.0
 ) -> Dictionary:
-	if cols < 8 or view_rows < 8:
-		return {"text": "", "depth": []}
+	# Never bail out with an empty frame (that leaves only the HUD in main.gd).
+	cols = maxi(8, cols)
+	view_rows = maxi(8, view_rows)
 	var dir := Vector2(cos(angle), sin(angle))
 	var plane := Vector2(-dir.y, dir.x) * tan(deg_to_rad(70.0) * 0.5)
 	var half: int = view_rows / 2
@@ -237,12 +238,19 @@ static func render(
 	if sprites.size() > 0:
 		_draw_sprites_dither(grid, depth_buffer, view_rows, half, cols, pos, dir, plane, sprites, flash_boost, glitch_strength, style_phase)
 
-	var out := ""
+	# Single buffer (ASCII glyphs only) — avoids O(n²) string += on large grids / web.
+	var nl_between: int = maxi(0, view_rows - 1)
+	var buf: PackedByteArray = PackedByteArray()
+	buf.resize(view_rows * cols + nl_between)
+	var idx: int = 0
 	for r in view_rows:
 		for c in cols:
-			out += String.chr(grid[r][c])
+			buf[idx] = grid[r][c] as int
+			idx += 1
 		if r + 1 < view_rows:
-			out += "\n"
+			buf[idx] = 10
+			idx += 1
+	var out: String = buf.get_string_from_utf8()
 	return {"text": out, "depth": depth_buffer}
 
 

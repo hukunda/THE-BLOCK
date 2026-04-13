@@ -21,6 +21,9 @@ var _web_layout_fixup_done: bool = false
 const MIN_COLS: int = 80
 const MIN_VIEW_ROWS: int = 22
 const HUD_ROWS: int = 8
+## Cap ASCII grid size so each frame stays cheap (web / hi‑DPI can inflate rows/cols).
+const MAX_ASCII_COLS: int = 132
+const MAX_VIEW_ROWS: int = 56
 
 
 func _ready() -> void:
@@ -167,10 +170,12 @@ func _redraw_ascii() -> void:
 	var px: Vector2 = _layout_px()
 	var cell: Vector2 = _cell_size()
 	var cols: int = maxi(MIN_COLS, int(px.x / cell.x))
+	cols = mini(MAX_ASCII_COLS, cols)
 	var total_rows: int = maxi(MIN_VIEW_ROWS + HUD_ROWS, int(px.y / cell.y))
 	var view_rows: int = clampi(total_rows - HUD_ROWS, MIN_VIEW_ROWS, total_rows - 1)
 	if world.roof_hud_strip():
 		view_rows = maxi(MIN_VIEW_ROWS - 4, view_rows - 4)
+	view_rows = clampi(view_rows, 8, MAX_VIEW_ROWS)
 
 	var res: Dictionary = AsciiRaycast.render(
 		world.map,
