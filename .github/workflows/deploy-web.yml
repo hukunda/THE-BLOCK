@@ -111,35 +111,15 @@ jobs:
 
       # Project Pages live at https://<owner>.github.io/<repo>/ — without a path-only
       # <base href>, some browsers resolve ./index.wasm from the site root and 404.
-      - name: Pages asset base + sanity checks
+      - name: Pages asset base + cache bust + sanity checks
         run: |
           set -euxo pipefail
           touch export/web/.nojekyll
-          python3 << 'PY'
-          import os
-          import pathlib
-          import re
-
-          repo = os.environ["GITHUB_REPOSITORY"].split("/")[1]
-          base_tag = f'<base href="/{repo}/">'
-          p = pathlib.Path("export/web/index.html")
-          text = p.read_text(encoding="utf-8")
-          if re.search(r"<base\s", text, flags=re.I):
-              print("index.html already has <base>")
-          else:
-
-              def _inject(m):
-                  return m.group(1) + "\n    " + base_tag + "\n"
-
-              text2, n = re.subn(r"(<head[^>]*>)", _inject, text, count=1, flags=re.I)
-              if n != 1:
-                  raise SystemExit("Could not inject <base href> into <head>")
-              p.write_text(text2, encoding="utf-8")
-          PY
+          python3 scripts/github_pages_post_export.py
           test -f export/web/index.html
           test -f export/web/index.js
           test -f export/web/index.wasm
-          test -f export/web/index.pck
+          python3 -c "import glob,sys; sys.exit(0 if glob.glob('export/web/index.*.*.pck') else 1)"
           ls -la export/web
 
       - name: Upload Pages artifact
