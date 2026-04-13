@@ -16,6 +16,7 @@ var move_touch_idx: int = -1
 var move_origin: Vector2 = Vector2.ZERO
 var move_vector: Vector2 = Vector2.ZERO
 const STICK_MAX: float = 96.0
+var _web_layout_fixup_done: bool = false
 
 const MIN_COLS: int = 80
 const MIN_VIEW_ROWS: int = 22
@@ -45,6 +46,11 @@ func _ready() -> void:
 	_touch_setup()
 	ascii_view.text = _title_text()
 	call_deferred("_redraw_ascii")
+	if OS.has_feature("web"):
+		await get_tree().process_frame
+		await get_tree().process_frame
+		_ensure_root_layout_from_viewport()
+		_redraw_ascii()
 
 
 func _on_floor_changed(_i: int, _t: String) -> void:
@@ -127,6 +133,29 @@ func _process(_delta: float) -> void:
 	_redraw_ascii()
 
 
+func _layout_px() -> Vector2:
+	var s: Vector2 = size
+	if s.x >= 8.0 and s.y >= 8.0:
+		return s
+	var vr: Vector2 = get_viewport().get_visible_rect().size
+	if vr.x >= 8.0 and vr.y >= 8.0:
+		return vr
+	return Vector2(1280.0, 720.0)
+
+
+func _ensure_root_layout_from_viewport() -> void:
+	if _web_layout_fixup_done:
+		return
+	var vr: Vector2 = get_viewport().get_visible_rect().size
+	if vr.x < 32.0 or vr.y < 32.0:
+		return
+	if size.x >= 32.0 and size.y >= 32.0:
+		_web_layout_fixup_done = true
+		return
+	custom_minimum_size = vr
+	_web_layout_fixup_done = true
+
+
 func _redraw_ascii() -> void:
 	if GameState.show_title:
 		ascii_view.text = _title_text()
@@ -135,9 +164,10 @@ func _redraw_ascii() -> void:
 		ascii_view.text = _victory_text()
 		return
 
+	var px: Vector2 = _layout_px()
 	var cell: Vector2 = _cell_size()
-	var cols: int = maxi(MIN_COLS, int(size.x / cell.x))
-	var total_rows: int = maxi(MIN_VIEW_ROWS + HUD_ROWS, int(size.y / cell.y))
+	var cols: int = maxi(MIN_COLS, int(px.x / cell.x))
+	var total_rows: int = maxi(MIN_VIEW_ROWS + HUD_ROWS, int(px.y / cell.y))
 	var view_rows: int = clampi(total_rows - HUD_ROWS, MIN_VIEW_ROWS, total_rows - 1)
 	if world.roof_hud_strip():
 		view_rows = maxi(MIN_VIEW_ROWS - 4, view_rows - 4)
@@ -344,3 +374,7 @@ func _on_touch_interact() -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
 		get_tree().quit()
+	elif what == NOTIFICATION_RESIZED:
+		if OS.has_feature("web"):
+			_ensure_root_layout_from_viewport()
+		call_deferred("_redraw_ascii")

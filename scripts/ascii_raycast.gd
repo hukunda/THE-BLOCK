@@ -319,8 +319,3 @@ static func hitscan_wall(map: PackedStringArray, pos: Vector2, angle: float, max
 		if is_blocked_at(map, p):
 			return {"hit": true, "dist": d, "at": p}
 	return {"hit": false, "dist": max_dist, "at": p}
-</think>
-I introduced a mistake in the sprite loop. Fixing the file.
-
-<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
-Read
